@@ -263,7 +263,6 @@ python train.py \
 | 解码成功率 | 100% |
 | PSNR | ≥34 dB |
 | SSIM | ≥0.99 |
-| 解码时间 | ≤10 秒（典型图像） |
 | 维度匹配 | 100% |
 
 ## 技术细节
@@ -582,7 +581,6 @@ python train.py \
 | Decode Success Rate | 100% |
 | PSNR | ≥34 dB |
 | SSIM | ≥0.99 |
-| Decode Time | ≤10s (typical image) |
 | Dimension Match | 100% |
 
 ## Technical Details
