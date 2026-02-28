@@ -38,100 +38,120 @@ const AppState = {
 };
 
 // ============================================================================
-// DOM 元素引用
+// DOM 元素引用 - 延迟初始化模式，确保DOM完全加载后再获取
 // ============================================================================
-const elements = {
-    // 导航按钮
-    navButtons: document.querySelectorAll('.nav-btn'),
+let elements = null;
+
+async function initElements() {
+    if (document.readyState !== 'complete' && document.readyState !== 'interactive') {
+        await new Promise((resolve) => {
+            document.addEventListener('DOMContentLoaded', resolve, { once: true });
+        });
+    }
     
-    // 标签内容
-    tabContents: {
-        encode: document.getElementById('tab-encode'),
-        decode: document.getElementById('tab-decode'),
-        batch: document.getElementById('tab-batch')
-    },
+    elements = {
+        // 导航按钮
+        navButtons: document.querySelectorAll('.nav-btn'),
+        
+        // 标签内容
+        tabContents: {
+            encode: document.getElementById('tab-encode'),
+            decode: document.getElementById('tab-decode'),
+            batch: document.getElementById('tab-batch')
+        },
+        
+        // 嵌入相关
+        dropZoneEncode: document.getElementById('drop-zone-encode'),
+        fileInputEncode: document.getElementById('file-input-encode'),
+        fileListEncode: document.getElementById('file-list-encode'),
+        messageInput: document.getElementById('message-input'),
+        capacityBadge: document.getElementById('capacity-badge'),
+        btnEncode: document.getElementById('btn-encode'),
+        btnClearEncode: document.getElementById('btn-clear-encode'),
+        charCount: document.getElementById('char-count'),
+        capacityWarning: document.getElementById('capacity-warning'),
+        resultPanelEncode: document.getElementById('result-panel-encode'),
+        originalPreview: document.getElementById('original-preview'),
+        encodedPreview: document.getElementById('encoded-preview'),
+        resultFileSize: document.getElementById('result-file-size'),
+        resultEncodeTime: document.getElementById('result-encode-time'),
+        resultMessageLength: document.getElementById('result-message-length'),
+        btnDownload: document.getElementById('btn-download'),
+        btnNewEncode: document.getElementById('btn-new-encode'),
+        
+        // 解码相关
+        dropZoneDecode: document.getElementById('drop-zone-decode'),
+        fileInputDecode: document.getElementById('file-input-decode'),
+        fileInfoDecode: document.getElementById('file-info-decode'),
+        decodePreview: document.getElementById('decode-preview'),
+        decodeFilename: document.getElementById('decode-filename'),
+        decodeDimensions: document.getElementById('decode-dimensions'),
+        decodeFilesize: document.getElementById('decode-filesize'),
+        btnDecode: document.getElementById('btn-decode'),
+        btnClearDecode: document.getElementById('btn-clear-decode'),
+        resultPanelDecode: document.getElementById('result-panel-decode'),
+        decodedMessage: document.getElementById('decoded-message'),
+        decodedMessageLength: document.getElementById('decoded-message-length'),
+        decodedTime: document.getElementById('decoded-time'),
+        btnCopyMessage: document.getElementById('btn-copy-message'),
+        btnNewDecode: document.getElementById('btn-new-decode'),
+        
+        // 批量嵌入相关
+        dropZoneBatch: document.getElementById('drop-zone-batch'),
+        fileInputBatch: document.getElementById('file-input-batch'),
+        batchFileList: document.getElementById('batch-file-list'),
+        batchMessageInput: document.getElementById('batch-message-input'),
+        batchProgress: document.getElementById('batch-progress'),
+        batchProgressText: document.getElementById('batch-progress-text'),
+        batchProgressFill: document.getElementById('batch-progress-fill'),
+        btnBatchEncode: document.getElementById('btn-batch-encode'),
+        btnClearBatch: document.getElementById('btn-clear-batch'),
+        batchResultPanel: document.getElementById('batch-result-panel'),
+        batchSuccessCount: document.getElementById('batch-success-count'),
+        batchFailCount: document.getElementById('batch-fail-count'),
+        batchTime: document.getElementById('batch-time'),
+        batchFilesResult: document.getElementById('batch-files-result'),
+        btnDownloadAllBatch: document.getElementById('btn-download-all-batch'),
+        btnPackageDownload: document.getElementById('btn-package-download'),
+        downloadCountBadge: document.getElementById('download-count-badge'),
+        downloadHintText: document.getElementById('download-hint-text'),
+        btnNewBatch: document.getElementById('btn-new-batch'),
+        
+        // 全局元素
+        historyList: document.getElementById('history-list'),
+        clearHistory: document.getElementById('clear-history'),
+        viewAllHistory: document.getElementById('view-all-history'),
+        themeToggle: document.getElementById('theme-toggle'),
+        helpBtn: document.getElementById('help-btn'),
+        helpModal: document.getElementById('help-modal'),
+        modalClose: document.getElementById('modal-close'),
+        statusText: document.getElementById('status-text'),
+        connectionStatus: document.getElementById('connection-status'),
+        globalProgress: document.getElementById('global-progress'),
+        globalProgressFill: document.getElementById('global-progress-fill'),
+        notificationContainer: document.getElementById('notification-container'),
+        
+        // 历史记录模态框元素
+        historyModal: document.getElementById('history-modal'),
+        historyModalClose: document.getElementById('history-modal-close'),
+        historyModalBackBtn: document.getElementById('history-modal-back-btn'),
+        historyModalList: document.getElementById('history-modal-list'),
+        historyTotalCount: document.getElementById('history-total-count'),
+        historySearchInput: document.getElementById('history-search-input'),
+        historySortSelect: document.getElementById('history-sort-select'),
+        clearAllHistory: document.getElementById('clear-all-history')
+    };
     
-    // 嵌入相关
-    dropZoneEncode: document.getElementById('drop-zone-encode'),
-    fileInputEncode: document.getElementById('file-input-encode'),
-    fileListEncode: document.getElementById('file-list-encode'),
-    messageInput: document.getElementById('message-input'),
-    capacityBadge: document.getElementById('capacity-badge'),
-    btnEncode: document.getElementById('btn-encode'),
-    btnClearEncode: document.getElementById('btn-clear-encode'),
-    charCount: document.getElementById('char-count'),
-    capacityWarning: document.getElementById('capacity-warning'),
-    resultPanelEncode: document.getElementById('result-panel-encode'),
-    originalPreview: document.getElementById('original-preview'),
-    encodedPreview: document.getElementById('encoded-preview'),
-    resultFileSize: document.getElementById('result-file-size'),
-    resultEncodeTime: document.getElementById('result-encode-time'),
-    resultMessageLength: document.getElementById('result-message-length'),
-    btnDownload: document.getElementById('btn-download'),
-    btnNewEncode: document.getElementById('btn-new-encode'),
+    const criticalElements = ['messageInput', 'btnEncode', 'dropZoneEncode', 'fileInputEncode'];
+    for (const key of criticalElements) {
+        if (!elements[key]) {
+            console.error(`关键元素缺失: ${key}`);
+            return false;
+        }
+    }
     
-    // 解码相关
-    dropZoneDecode: document.getElementById('drop-zone-decode'),
-    fileInputDecode: document.getElementById('file-input-decode'),
-    fileInfoDecode: document.getElementById('file-info-decode'),
-    decodePreview: document.getElementById('decode-preview'),
-    decodeFilename: document.getElementById('decode-filename'),
-    decodeDimensions: document.getElementById('decode-dimensions'),
-    decodeFilesize: document.getElementById('decode-filesize'),
-    btnDecode: document.getElementById('btn-decode'),
-    btnClearDecode: document.getElementById('btn-clear-decode'),
-    resultPanelDecode: document.getElementById('result-panel-decode'),
-    decodedMessage: document.getElementById('decoded-message'),
-    decodedMessageLength: document.getElementById('decoded-message-length'),
-    decodedTime: document.getElementById('decoded-time'),
-    btnCopyMessage: document.getElementById('btn-copy-message'),
-    btnNewDecode: document.getElementById('btn-new-decode'),
-    
-    // 批量嵌入相关
-    dropZoneBatch: document.getElementById('drop-zone-batch'),
-    fileInputBatch: document.getElementById('file-input-batch'),
-    batchFileList: document.getElementById('batch-file-list'),
-    batchMessageInput: document.getElementById('batch-message-input'),
-    batchProgress: document.getElementById('batch-progress'),
-    batchProgressText: document.getElementById('batch-progress-text'),
-    batchProgressFill: document.getElementById('batch-progress-fill'),
-    btnBatchEncode: document.getElementById('btn-batch-encode'),
-    btnClearBatch: document.getElementById('btn-clear-batch'),
-    batchResultPanel: document.getElementById('batch-result-panel'),
-    batchSuccessCount: document.getElementById('batch-success-count'),
-    batchFailCount: document.getElementById('batch-fail-count'),
-    batchTime: document.getElementById('batch-time'),
-    batchFilesResult: document.getElementById('batch-files-result'),
-    btnDownloadAllBatch: document.getElementById('btn-download-all-batch'),
-    btnPackageDownload: document.getElementById('btn-package-download'),
-    downloadCountBadge: document.getElementById('download-count-badge'),
-    downloadHintText: document.getElementById('download-hint-text'),
-    btnNewBatch: document.getElementById('btn-new-batch'),
-    
-    // 全局元素
-    historyList: document.getElementById('history-list'),
-    clearHistory: document.getElementById('clear-history'),
-    viewAllHistory: document.getElementById('view-all-history'),
-    themeToggle: document.getElementById('theme-toggle'),
-    helpBtn: document.getElementById('help-btn'),
-    helpModal: document.getElementById('help-modal'),
-    modalClose: document.getElementById('modal-close'),
-    statusText: document.getElementById('status-text'),
-    connectionStatus: document.getElementById('connection-status'),
-    globalProgress: document.getElementById('global-progress'),
-    globalProgressFill: document.getElementById('global-progress-fill'),
-    notificationContainer: document.getElementById('notification-container'),
-    
-    // 历史记录模态框元素
-    historyModal: document.getElementById('history-modal'),
-    historyModalClose: document.getElementById('history-modal-close'),
-    historyModalBackBtn: document.getElementById('history-modal-back-btn'),
-    historyModalList: document.getElementById('history-modal-list'),
-    historyTotalCount: document.getElementById('history-total-count'),
-    historySearchInput: document.getElementById('history-search-input'),
-    historySortSelect: document.getElementById('history-sort-select'),
-    clearAllHistory: document.getElementById('clear-all-history')
-};
+    return true;
+}
 
 // ============================================================================
 // API 客户端 - 增强版，带错误处理和重试机制
@@ -1025,16 +1045,22 @@ async function handleEncodeFiles(files) {
 }
 
 function updateEncodeUI() {
+    // 安全检查：确保关键元素存在
+    if (!elements || !elements.messageInput || !elements.btnEncode) {
+        console.warn('updateEncodeUI: 关键元素未初始化');
+        return;
+    }
+    
     const hasFiles = AppState.uploadedFiles.length > 0;
     const hasValidSize = AppState.maxCapacity > 0;
-    const hasMessage = elements.messageInput.value.trim().length > 0;
+    const messageValue = elements.messageInput.value || '';
+    const hasMessage = messageValue.trim().length > 0;
     
-    // 更新按钮状态 - 尺寸不足时禁用
     elements.btnEncode.disabled = !hasFiles || !hasValidSize || !hasMessage;
     
     // 更新容量信息
     if (AppState.maxCapacity > 0) {
-        const messageLength = elements.messageInput.value.length;
+        const messageLength = messageValue.length;
         const capacityUsed = messageLength / AppState.maxCapacity * 100;
         
         elements.capacityBadge.textContent = `容量: ${formatFileSize(AppState.maxCapacity)}`;
@@ -1059,11 +1085,12 @@ function updateEncodeUI() {
     }
     
     // 更新字符计数
-    elements.charCount.textContent = `${elements.messageInput.value.length} 字符`;
+    if (elements.charCount) {
+        elements.charCount.textContent = `${messageValue.length} 字符`;
+    }
 }
 
 async function encodeMessage() {
-    // 前置检查
     if (AppState.uploadedFiles.length === 0) {
         NotificationManager.warning('请先上传图像文件');
         elements.dropZoneEncode.classList.add('error-shake');
@@ -1071,27 +1098,14 @@ async function encodeMessage() {
         return;
     }
     
-    // 验证消息输入元素是否存在
     if (!elements.messageInput) {
-        console.error('消息输入元素未找到！');
         NotificationManager.error('系统错误：消息输入框未找到，请刷新页面重试');
         return;
     }
     
-    // 获取输入的消息，支持多种输入方式
-    let message = '';
-    try {
-        message = elements.messageInput.value;
-        console.log('原始输入值:', message);
-        message = message.trim();
-        console.log('修剪后消息:', message, '长度:', message.length);
-    } catch (e) {
-        console.error('获取消息输入值时出错:', e);
-        NotificationManager.error('读取消息内容失败，请重新输入');
-        return;
-    }
+    const message = elements.messageInput.value.trim();
     
-    if (!message || message.length === 0) {
+    if (!message) {
         NotificationManager.warning('请输入要嵌入的消息');
         elements.messageInput.focus();
         elements.messageInput.classList.add('error-shake');
@@ -2595,33 +2609,60 @@ function toggleHelpModal(show) {
 // 事件监听器设置
 // ============================================================================
 function setupEventListeners() {
-    // 标签切换
-    elements.navButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tab = btn.dataset.tab;
-            switchTab(tab);
+    if (!elements) {
+        console.error('setupEventListeners: elements对象未初始化');
+        return;
+    }
+    
+    if (elements.navButtons) {
+        elements.navButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                switchTab(tab);
+            });
         });
-    });
+    }
     
     // 嵌入相关
-    setupDragAndDrop(elements.dropZoneEncode, elements.fileInputEncode, handleEncodeFiles);
-    elements.btnEncode.addEventListener('click', encodeMessage);
-    elements.btnClearEncode.addEventListener('click', clearEncode);
-    elements.btnNewEncode.addEventListener('click', clearEncode);
+    if (elements.dropZoneEncode && elements.fileInputEncode) {
+        setupDragAndDrop(elements.dropZoneEncode, elements.fileInputEncode, handleEncodeFiles);
+    }
+    if (elements.btnEncode) {
+        elements.btnEncode.addEventListener('click', encodeMessage);
+    }
+    if (elements.btnClearEncode) {
+        elements.btnClearEncode.addEventListener('click', clearEncode);
+    }
+    if (elements.btnNewEncode) {
+        elements.btnNewEncode.addEventListener('click', clearEncode);
+    }
     
-    // 解码相关
-    setupDragAndDrop(elements.dropZoneDecode, elements.fileInputDecode, handleDecodeFile);
-    elements.btnDecode.addEventListener('click', decodeMessage);
-    elements.btnClearDecode.addEventListener('click', clearDecode);
-    elements.btnNewDecode.addEventListener('click', clearDecode);
+    if (elements.dropZoneDecode && elements.fileInputDecode) {
+        setupDragAndDrop(elements.dropZoneDecode, elements.fileInputDecode, handleDecodeFile);
+    }
+    if (elements.btnDecode) {
+        elements.btnDecode.addEventListener('click', decodeMessage);
+    }
+    if (elements.btnClearDecode) {
+        elements.btnClearDecode.addEventListener('click', clearDecode);
+    }
+    if (elements.btnNewDecode) {
+        elements.btnNewDecode.addEventListener('click', clearDecode);
+    }
     
-    // 批量嵌入相关
-    setupDragAndDrop(elements.dropZoneBatch, elements.fileInputBatch, handleBatchFiles);
-    elements.btnBatchEncode.addEventListener('click', batchEncode);
-    elements.btnClearBatch.addEventListener('click', clearBatch);
-    elements.btnNewBatch.addEventListener('click', clearBatch);
+    if (elements.dropZoneBatch && elements.fileInputBatch) {
+        setupDragAndDrop(elements.dropZoneBatch, elements.fileInputBatch, handleBatchFiles);
+    }
+    if (elements.btnBatchEncode) {
+        elements.btnBatchEncode.addEventListener('click', batchEncode);
+    }
+    if (elements.btnClearBatch) {
+        elements.btnClearBatch.addEventListener('click', clearBatch);
+    }
+    if (elements.btnNewBatch) {
+        elements.btnNewBatch.addEventListener('click', clearBatch);
+    }
     
-    // 中断按钮事件
     const btnInterruptEncode = document.getElementById('btn-interrupt-encode');
     const btnInterruptDecode = document.getElementById('btn-interrupt-decode');
     const btnInterruptBatch = document.getElementById('btn-interrupt-batch');
@@ -2636,85 +2677,48 @@ function setupEventListeners() {
         btnInterruptBatch.addEventListener('click', requestInterrupt);
     }
     
-    // 批量下载按钮
-    elements.btnDownloadAllBatch.addEventListener('click', () => {
-        if (AppState.batchDownloadLinks && AppState.batchDownloadLinks.length > 0) {
-            downloadAllFiles(AppState.batchDownloadLinks);
-        }
-    });
+    if (elements.btnDownloadAllBatch) {
+        elements.btnDownloadAllBatch.addEventListener('click', () => {
+            if (AppState.batchDownloadLinks && AppState.batchDownloadLinks.length > 0) {
+                downloadAllFiles(AppState.batchDownloadLinks);
+            }
+        });
+    }
     
-    // 打包下载按钮
-    elements.btnPackageDownload.addEventListener('click', () => {
-        NotificationManager.info('打包下载功能开发中，请使用"下载全部文件"按钮');
-    });
+    if (elements.btnPackageDownload) {
+        elements.btnPackageDownload.addEventListener('click', () => {
+            NotificationManager.info('打包下载功能开发中，请使用"下载全部文件"按钮');
+        });
+    }
     
-    // 消息输入 - 增强事件监听，支持中文输入法和粘贴操作
     if (elements.messageInput) {
-        // input事件 - 处理正常输入和粘贴
-        elements.messageInput.addEventListener('input', (e) => {
-            console.log('消息输入事件触发，当前值:', e.target.value);
-            updateEncodeUI();
+        elements.messageInput.addEventListener('input', updateEncodeUI);
+        elements.messageInput.addEventListener('compositionend', updateEncodeUI);
+        elements.messageInput.addEventListener('paste', () => {
+            setTimeout(updateEncodeUI, 0);
         });
-        
-        // compositionstart/compositionend - 处理中文输入法
-        elements.messageInput.addEventListener('compositionstart', () => {
-            console.log('中文输入法开始输入');
-        });
-        
-        elements.messageInput.addEventListener('compositionend', (e) => {
-            console.log('中文输入法输入完成，最终值:', e.target.value);
-            updateEncodeUI();
-        });
-        
-        // paste事件 - 处理粘贴操作
-        elements.messageInput.addEventListener('paste', (e) => {
-            console.log('粘贴事件触发');
-            // 延迟更新UI，等待粘贴内容写入
-            setTimeout(() => {
-                console.log('粘贴后值:', elements.messageInput.value);
-                updateEncodeUI();
-            }, 0);
-        });
-        
-        // keyup事件 - 作为备用
-        elements.messageInput.addEventListener('keyup', () => {
-            updateEncodeUI();
-        });
-        
-        // 确保输入框可以正常聚焦
-        elements.messageInput.addEventListener('focus', () => {
-            console.log('消息输入框获得焦点');
-        });
-        
-        elements.messageInput.addEventListener('blur', () => {
-            console.log('消息输入框失去焦点，当前值:', elements.messageInput.value);
-        });
-    } else {
-        console.error('消息输入元素未找到，无法绑定事件！');
     }
     
     if (elements.batchMessageInput) {
         elements.batchMessageInput.addEventListener('input', updateBatchUI);
-        // 同样为批量输入添加中文输入法支持
         elements.batchMessageInput.addEventListener('compositionend', updateBatchUI);
         elements.batchMessageInput.addEventListener('paste', () => {
             setTimeout(updateBatchUI, 0);
         });
     }
     
-    // 历史记录
-    elements.clearHistory.addEventListener('click', () => {
-        AppState.history = [];
-        renderHistory();
-        showNotification('历史记录已清空', 'info');
-    });
+    if (elements.clearHistory) {
+        elements.clearHistory.addEventListener('click', () => {
+            AppState.history = [];
+            renderHistory();
+            showNotification('历史记录已清空', 'info');
+        });
+    }
     
-    // 查看完整历史记录
     if (elements.viewAllHistory) {
         elements.viewAllHistory.addEventListener('click', openHistoryModal);
     }
     
-    // 历史记录模态框事件
     if (elements.historyModalClose) {
         elements.historyModalClose.addEventListener('click', closeHistoryModal);
     }
@@ -2729,7 +2733,6 @@ function setupEventListeners() {
         });
     }
     
-    // 历史记录筛选按钮
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -2739,7 +2742,6 @@ function setupEventListeners() {
         });
     });
     
-    // 历史记录状态筛选
     document.querySelectorAll('.filter-btn-status').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.filter-btn-status').forEach(b => b.classList.remove('active'));
@@ -2749,7 +2751,6 @@ function setupEventListeners() {
         });
     });
     
-    // 历史记录搜索
     if (elements.historySearchInput) {
         elements.historySearchInput.addEventListener('input', (e) => {
             AppState.historyFilter.search = e.target.value.toLowerCase();
@@ -2757,7 +2758,6 @@ function setupEventListeners() {
         });
     }
     
-    // 历史记录排序
     if (elements.historySortSelect) {
         elements.historySortSelect.addEventListener('change', (e) => {
             AppState.historyFilter.sort = e.target.value;
@@ -2765,28 +2765,34 @@ function setupEventListeners() {
         });
     }
     
-    // 清空所有历史
     if (elements.clearAllHistory) {
         elements.clearAllHistory.addEventListener('click', clearAllHistory);
     }
     
-    // 主题切换
-    elements.themeToggle.addEventListener('click', toggleTheme);
+    if (elements.themeToggle) {
+        elements.themeToggle.addEventListener('click', toggleTheme);
+    }
     
-    // 帮助
-    elements.helpBtn.addEventListener('click', () => toggleHelpModal(true));
-    elements.modalClose.addEventListener('click', () => toggleHelpModal(false));
-    elements.helpModal.addEventListener('click', (e) => {
-        if (e.target === elements.helpModal) {
-            toggleHelpModal(false);
-        }
-    });
+    if (elements.helpBtn) {
+        elements.helpBtn.addEventListener('click', () => toggleHelpModal(true));
+    }
+    if (elements.modalClose) {
+        elements.modalClose.addEventListener('click', () => toggleHelpModal(false));
+    }
+    if (elements.helpModal) {
+        elements.helpModal.addEventListener('click', (e) => {
+            if (e.target === elements.helpModal) {
+                toggleHelpModal(false);
+            }
+        });
+    }
     
-    // 复制消息
-    elements.btnCopyMessage.addEventListener('click', () => {
-        navigator.clipboard.writeText(elements.decodedMessage.value);
-        showNotification('消息已复制到剪贴板', 'success');
-    });
+    if (elements.btnCopyMessage) {
+        elements.btnCopyMessage.addEventListener('click', () => {
+            navigator.clipboard.writeText(elements.decodedMessage.value);
+            showNotification('消息已复制到剪贴板', 'success');
+        });
+    }
 }
 
 // ============================================================================
@@ -2849,31 +2855,14 @@ function clearBatch() {
 // ============================================================================
 // 初始化
 // ============================================================================
-function init() {
+async function init() {
     console.log('开始初始化应用...');
     
-    // 验证关键DOM元素
-    const criticalElements = [
-        { id: 'message-input', name: '消息输入框' },
-        { id: 'btn-encode', name: '嵌入按钮' },
-        { id: 'drop-zone-encode', name: '嵌入拖放区' },
-        { id: 'file-input-encode', name: '文件输入' }
-    ];
-    
-    let missingElements = [];
-    criticalElements.forEach(el => {
-        const element = document.getElementById(el.id);
-        if (!element) {
-            missingElements.push(el.name);
-            console.error(`关键元素缺失: ${el.name} (id: ${el.id})`);
-        } else {
-            console.log(`✓ 元素已找到: ${el.name} (id: ${el.id})`);
-        }
-    });
-    
-    if (missingElements.length > 0) {
-        console.error('初始化失败：以下关键元素未找到:', missingElements.join(', '));
-        alert('页面初始化失败，请刷新页面重试。缺少元素: ' + missingElements.join(', '));
+    // 首先初始化 DOM 元素引用
+    const elementsInitialized = await initElements();
+    if (!elementsInitialized) {
+        console.error('DOM 元素初始化失败，无法继续');
+        alert('页面初始化失败，请刷新页面重试。');
         return;
     }
     
