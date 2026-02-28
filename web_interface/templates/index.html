@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImgStegGAN - GAN-Driven Image Steganography</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-image"></i>
+            <h1>ImgStegGAN</h1>
+        </div>
+        <nav class="navbar-nav">
+            <button class="nav-btn active" data-tab="encode">
+                <i class="fas fa-lock"></i>
+                <span>嵌入消息</span>
+            </button>
+            <button class="nav-btn" data-tab="decode">
+                <i class="fas fa-unlock"></i>
+                <span>提取消息</span>
+            </button>
+            <button class="nav-btn" data-tab="batch">
+                <i class="fas fa-layer-group"></i>
+                <span>批量处理</span>
+            </button>
+        </nav>
+        <div class="navbar-actions">
+            <button class="icon-btn" id="theme-toggle" title="切换主题">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button class="icon-btn" id="help-btn" title="帮助">
+                <i class="fas fa-question-circle"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <h3><i class="fas fa-history"></i> 历史记录</h3>
+                <div id="history-list" class="history-list">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>暂无历史记录</p>
+                    </div>
+                </div>
+                <div class="history-actions">
+                    <button class="btn btn-secondary btn-sm" id="view-all-history">
+                        <i class="fas fa-external-link-alt"></i> 查看全部
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="clear-history">
+                        <i class="fas fa-trash"></i> 清空
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <section class="content-area">
+            <div class="tab-content active" id="tab-encode">
+                <div class="page-header">
+                    <h1 class="page-title">嵌入消息</h1>
+                    <p class="page-subtitle">将秘密消息隐藏到图像中，支持 PNG、JPG、JPEG、BMP 格式</p>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-cloud-upload-alt"></i> 上传图像</h2>
+                        <span class="badge">单张图片</span>
+                    </div>
+                    
+                    <div class="drop-zone" id="drop-zone-encode">
+                        <div class="drop-zone-content">
+                            <div class="drop-zone-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h3>拖拽文件到此处</h3>
+                            <p>或 <span class="text-link">点击选择文件</span></p>
+                            <small>支持 PNG, JPG, JPEG, BMP 格式，最小 256×256 像素</small>
+                        </div>
+                        <div class="drop-zone-overlay">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>释放以上传文件</span>
+                        </div>
+                        <input type="file" id="file-input-encode" class="file-input"
+                               accept="image/png,image/jpeg,image/jpg,image/bmp">
+                    </div>
+
+                    <div class="file-list" id="file-list-encode"></div>
+                </div>
+
+                <div class="panel" id="message-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-comment-dots"></i> 嵌入消息</h2>
+                        <span class="capacity-badge" id="capacity-badge">容量: --</span>
+                    </div>
+                    <div style="padding: var(--spacing-lg);">
+                        <textarea id="message-input" class="message-textarea" 
+                                  placeholder="在此输入要嵌入的秘密消息..."
+                                  rows="5"></textarea>
+                        <div class="message-stats">
+                            <span id="char-count">0 字符</span>
+                            <span id="capacity-warning" class="warning-text"></span>
+                        </div>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-primary" id="btn-encode" disabled>
+                            <i class="fas fa-lock"></i>
+                            <span>嵌入消息</span>
+                            <div class="btn-loader"></div>
+                        </button>
+                        <button class="btn btn-danger" id="btn-interrupt-encode" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                            <span>中断任务</span>
+                        </button>
+                        <button class="btn btn-secondary" id="btn-clear-encode">
+                            <i class="fas fa-times"></i>
+                            <span>清除</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel" id="result-panel-encode" style="display: none;">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-check-circle"></i> 嵌入结果</h2>
+                        <span class="badge badge-success">完成</span>
+                    </div>
+                    <div class="result-content">
+                        <div class="result-preview">
+                            <div class="preview-item">
+                                <h4>原始图像</h4>
+                                <div class="preview-container" id="original-preview"></div>
+                            </div>
+                            <div class="preview-arrow">
+                                <i class="fas fa-arrow-right"></i>
+                            </div>
+                            <div class="preview-item">
+                                <h4>隐写图像</h4>
+                                <div class="preview-container" id="encoded-preview"></div>
+                            </div>
+                        </div>
+                        <div class="result-info">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">文件大小</span>
+                                    <span class="info-value" id="result-file-size">--</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">嵌入时间</span>
+                                    <span class="info-value" id="result-encode-time">--</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">消息长度</span>
+                                    <span class="info-value" id="result-message-length">--</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="result-actions">
+                            <a href="#" class="btn btn-success" id="btn-download" download>
+                                <i class="fas fa-download"></i>
+                                <span>下载隐写图像</span>
+                            </a>
+                            <button class="btn btn-secondary" id="btn-new-encode">
+                                <i class="fas fa-plus"></i>
+                                <span>新的嵌入</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-decode">
+                <div class="page-header">
+                    <h1 class="page-title">提取消息</h1>
+                    <p class="page-subtitle">从包含隐藏消息的图像中提取秘密信息</p>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-cloud-upload-alt"></i> 上传隐写图像</h2>
+                        <span class="badge">PNG, JPG, JPEG, BMP</span>
+                    </div>
+                    
+                    <div class="drop-zone" id="drop-zone-decode">
+                        <div class="drop-zone-content">
+                            <div class="drop-zone-icon">
+                                <i class="fas fa-file-image"></i>
+                            </div>
+                            <h3>拖拽隐写图像到此处</h3>
+                            <p>或 <span class="text-link">点击选择文件</span></p>
+                            <small>请上传包含隐藏消息的图像</small>
+                        </div>
+                        <div class="drop-zone-overlay">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>释放以上传文件</span>
+                        </div>
+                        <input type="file" id="file-input-decode" class="file-input" 
+                               accept="image/png,image/jpeg,image/jpg,image/bmp">
+                    </div>
+
+                    <div class="file-info" id="file-info-decode" style="display: none;">
+                        <div class="file-preview" id="decode-preview"></div>
+                        <div class="file-details">
+                            <h4>文件信息</h4>
+                            <div class="info-row">
+                                <span>文件名:</span>
+                                <span id="decode-filename">--</span>
+                            </div>
+                            <div class="info-row">
+                                <span>尺寸:</span>
+                                <span id="decode-dimensions">--</span>
+                            </div>
+                            <div class="info-row">
+                                <span>大小:</span>
+                                <span id="decode-filesize">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-actions">
+                        <button class="btn btn-primary" id="btn-decode" disabled>
+                            <i class="fas fa-unlock"></i>
+                            <span>提取消息</span>
+                            <div class="btn-loader"></div>
+                        </button>
+                        <button class="btn btn-danger" id="btn-interrupt-decode" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                            <span>中断任务</span>
+                        </button>
+                        <button class="btn btn-secondary" id="btn-clear-decode">
+                            <i class="fas fa-times"></i>
+                            <span>清除</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel" id="result-panel-decode" style="display: none;">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-comment-dots"></i> 提取的消息</h2>
+                        <span class="badge badge-success" id="decode-success-badge">提取成功</span>
+                    </div>
+                    <div style="padding: var(--spacing-lg);">
+                        <textarea id="decoded-message" class="message-textarea" 
+                                  readonly rows="8"></textarea>
+                    </div>
+                    <div class="result-info" style="margin: 0 var(--spacing-lg) var(--spacing-lg);">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="info-label">消息长度</span>
+                                <span class="info-value" id="decoded-message-length">--</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">提取时间</span>
+                                <span class="info-value" id="decoded-time">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-actions">
+                        <button class="btn btn-primary" id="btn-copy-message">
+                            <i class="fas fa-copy"></i>
+                            <span>复制消息</span>
+                        </button>
+                        <button class="btn btn-secondary" id="btn-new-decode">
+                            <i class="fas fa-plus"></i>
+                            <span>新的提取</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-batch">
+                <div class="page-header">
+                    <h1 class="page-title">批量处理</h1>
+                    <p class="page-subtitle">批量将消息嵌入到多个图像中</p>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-layer-group"></i> 批量上传</h2>
+                        <span class="badge">实验性功能</span>
+                    </div>
+                    
+                    <div class="drop-zone" id="drop-zone-batch">
+                        <div class="drop-zone-content">
+                            <div class="drop-zone-icon">
+                                <i class="fas fa-images"></i>
+                            </div>
+                            <h3>拖拽文件或文件夹到此处</h3>
+                            <p>或 <span class="text-link">点击选择文件</span></p>
+                            <small>支持批量嵌入相同消息到多个图像</small>
+                        </div>
+                        <div class="drop-zone-overlay">
+                            <i class="fas fa-plus-circle"></i>
+                            <span>释放以上传文件</span>
+                        </div>
+                        <input type="file" id="file-input-batch" class="file-input"
+                               accept="image/png,image/jpeg,image/jpg,image/bmp" multiple>
+                    </div>
+
+                    <div class="file-list" id="batch-file-list"></div>
+
+                    <div style="padding: var(--spacing-lg);">
+                        <label style="display: block; font-size: var(--font-size-sm); font-weight: 500; color: var(--text-secondary); margin-bottom: var(--spacing-sm);">要嵌入的消息</label>
+                        <textarea id="batch-message-input" class="message-textarea" 
+                                  placeholder="输入要嵌入到所有图像的消息..."
+                                  rows="4"></textarea>
+                    </div>
+
+                    <div class="batch-progress" id="batch-progress" style="display: none; padding: var(--spacing-md) var(--spacing-lg);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-sm);">
+                            <span>嵌入进度</span>
+                            <span id="batch-progress-text">0/0</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="batch-progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="panel-actions">
+                        <button class="btn btn-primary" id="btn-batch-encode" disabled>
+                            <i class="fas fa-play"></i>
+                            <span>开始批量嵌入</span>
+                        </button>
+                        <button class="btn btn-danger" id="btn-interrupt-batch" style="display: none;">
+                            <i class="fas fa-stop"></i>
+                            <span>中断任务</span>
+                        </button>
+                        <button class="btn btn-secondary" id="btn-clear-batch">
+                            <i class="fas fa-times"></i>
+                            <span>清除</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="panel" id="batch-result-panel" style="display: none;">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-check-circle"></i> 批量嵌入结果</h2>
+                        <span class="badge badge-success" id="batch-success-badge">完成</span>
+                    </div>
+                    
+                    <div class="result-content">
+                        <div class="result-info">
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">成功</span>
+                                    <span class="info-value" id="batch-success-count" style="color: var(--success-color);">0</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">失败</span>
+                                    <span class="info-value" id="batch-fail-count" style="color: var(--error-color);">0</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">总耗时</span>
+                                    <span class="info-value" id="batch-time">0s</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="file-list" id="batch-files-result" style="margin-bottom: var(--spacing-lg);"></div>
+
+                        <div class="result-actions">
+                            <button class="btn btn-success" id="btn-download-all-batch">
+                                <i class="fas fa-download"></i>
+                                <span>下载全部文件</span>
+                                <small id="download-count-badge"></small>
+                            </button>
+                            <button class="btn btn-secondary" id="btn-new-batch">
+                                <i class="fas fa-plus"></i>
+                                <span>新的批量嵌入</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="status-bar">
+        <div class="status-left">
+            <span id="status-text">就绪</span>
+        </div>
+        <div class="status-right">
+            <span id="connection-status" class="status-indicator online">
+                <i class="fas fa-circle"></i> 已连接
+            </span>
+            <span id="version">V1.0.0</span>
+        </div>
+    </footer>
+
+    <div class="global-progress" id="global-progress" style="display: none;">
+        <div class="progress-fill" id="global-progress-fill"></div>
+    </div>
+
+    <div class="notification-container" id="notification-container"></div>
+
+    <div class="modal" id="help-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-question-circle"></i> 使用帮助</h2>
+                <button class="modal-close" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: var(--spacing-lg);">
+                    <h3 style="font-size: var(--font-size-md); font-weight: 600; color: var(--text-primary); margin-bottom: var(--spacing-sm);">
+                        <i class="fas fa-lock" style="color: var(--primary-color);"></i> 如何嵌入消息
+                    </h3>
+                    <ol style="padding-left: 20px; line-height: 1.8; color: var(--text-secondary);">
+                        <li>切换到"嵌入消息"标签页</li>
+                        <li>拖拽或选择要使用的图像文件</li>
+                        <li>在文本框中输入要隐藏的消息</li>
+                        <li>点击"嵌入消息"按钮</li>
+                        <li>下载生成的隐写图像</li>
+                    </ol>
+                </div>
+                <div style="margin-bottom: var(--spacing-lg);">
+                    <h3 style="font-size: var(--font-size-md); font-weight: 600; color: var(--text-primary); margin-bottom: var(--spacing-sm);">
+                        <i class="fas fa-unlock" style="color: var(--primary-color);"></i> 如何提取消息
+                    </h3>
+                    <ol style="padding-left: 20px; line-height: 1.8; color: var(--text-secondary);">
+                        <li>切换到"提取消息"标签页</li>
+                        <li>上传包含隐藏消息的图像</li>
+                        <li>点击"提取消息"按钮</li>
+                        <li>查看提取出的消息</li>
+                    </ol>
+                </div>
+                <div>
+                    <h3 style="font-size: var(--font-size-md); font-weight: 600; color: var(--text-primary); margin-bottom: var(--spacing-sm);">
+                        <i class="fas fa-info-circle" style="color: var(--primary-color);"></i> 注意事项
+                    </h3>
+                    <ul style="padding-left: 20px; line-height: 1.8; color: var(--text-secondary);">
+                        <li>隐写图像建议以PNG格式保存以保持数据完整性</li>
+                        <li>图像容量取决于图像尺寸</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="replace-image-modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>仅限嵌入一张图片</h2>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                    当前功能区已调整为<strong>仅支持单张图片嵌入</strong>。
+                </p>
+                <div style="display: flex; align-items: center; gap: var(--spacing-sm); padding: var(--spacing-md); background: var(--bg-secondary); border-radius: var(--radius-md); margin-bottom: var(--spacing-md);">
+                    <i class="fas fa-image" style="color: var(--primary-color);"></i>
+                    <span>您选择了 <span id="selected-file-count" style="font-weight: 600; color: var(--primary-color);">1</span> 张新图片</span>
+                </div>
+                <p style="color: var(--text-secondary);">
+                    继续操作将使用新图片<strong>替换</strong>当前已存在的图片。
+                </p>
+            </div>
+            <div class="modal-footer" style="flex-direction: column;">
+                <button class="btn btn-primary" id="btn-replace-image" style="width: 100%;">
+                    <i class="fas fa-exchange-alt"></i>
+                    <span>替换为新图片</span>
+                </button>
+                <button class="btn btn-secondary" id="btn-cancel-replace" style="width: 100%;">
+                    <i class="fas fa-times"></i>
+                    <span>取消</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="history-modal">
+        <div class="modal-content" style="max-width: 800px; max-height: 80vh;">
+            <div class="modal-header">
+                <h2><i class="fas fa-history"></i> 完整历史记录</h2>
+                <button class="modal-close" id="history-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div id="history-modal-list">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>暂无历史记录</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the original SteganoGAN paper and this project."
+title: "ImgStegGAN: GAN-Driven Image Steganography with Qwen Enhancement"
+version: 1.0.0
+date-released: 2026-02-28
+url: "https://github.com/yourusername/ImgStegGAN"
+license: MIT
+
+authors:
+  - name: "ImgStegGAN Team"
+
+references:
+  - type: article
+    title: "SteganoGAN: High Capacity Image Steganography with GANs"
+    authors:
+      - family-names: Zhang
+        given-names: "Kevin Alex"
+      - family-names: Cuesta-Infante
+        given-names: Alfredo
+      - family-names: Veeramachaneni
+        given-names: Kalyan
+    journal: "arXiv preprint arXiv:1901.03892"
+    year: 2019
+    url: "https://arxiv.org/abs/1901.03892"
+
+keywords:
+  - steganography
+  - deep-learning
+  - gan
+  - image-steganography
+  - pytorch
+  - qwen
+
+abstract: |
+  ImgStegGAN is a high-performance image steganography system that combines 
+  Generative Adversarial Networks (GAN) with Qwen language model enhancement 
+  for secure and efficient hidden message embedding and extraction.
+  
+  This project is a modified and extended version of SteganoGAN by MIT Data To AI Lab.
