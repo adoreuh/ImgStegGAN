@@ -1,30 +1,14 @@
-# ImgStegGAN
+# ImgStegGAN: GAN-Driven Image Steganography with Qwen Enhancement
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![PyTorch 2.0+](https://img.shields.io/badge/pytorch-2.0+-orange.svg)](https://pytorch.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
-**Version: V1.0.0**
-
----
-
-<div align="center">
-
-### 🌐 Language Selection | 语言选择
-
-**[中文](#-中文文档)** | **[English](#-english-documentation)**
-
-</div>
 
 ---
 
 <!-- CHINESE VERSION -->
 <a name="中文文档"></a>
 # 中文文档
-
-<div align="right">
-
-**[English Version](#-english-documentation)**
 
 </div>
 
@@ -342,16 +326,10 @@ python train.py \
 ---
 
 <!-- ENGLISH VERSION -->
-<a name="english-documentation"></a>
+<a name="English-documentation"></a>
 # English Documentation
 
-<div align="right">
-
-**[中文版本](#-中文文档)**
-
 </div>
-
-## ImgStegGAN: GAN-Driven Image Steganography with Qwen Enhancement
 
 A high-performance image steganography system that combines Generative Adversarial Networks (GAN) with Qwen language model enhancement for secure and efficient hidden message embedding and extraction.
 
