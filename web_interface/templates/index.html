@@ -471,20 +471,38 @@
     </div>
 
     <div class="modal" id="history-modal">
-        <div class="modal-content" style="max-width: 800px; max-height: 80vh;">
+        <div class="modal-content history-modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-history"></i> 完整历史记录</h2>
                 <button class="modal-close" id="history-modal-close">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="modal-body" style="padding: 0;">
-                <div id="history-modal-list">
+            <div class="history-modal-toolbar">
+                <div class="history-search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="history-search-input" placeholder="搜索历史记录..." class="search-input">
+                </div>
+                <div class="history-filter-group">
+                    <select id="history-sort-select" class="filter-select">
+                        <option value="newest">最新优先</option>
+                        <option value="oldest">最早优先</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-body history-modal-body">
+                <div id="history-modal-list" class="history-modal-list">
                     <div class="empty-state">
                         <i class="fas fa-inbox"></i>
                         <p>暂无历史记录</p>
                     </div>
                 </div>
+            </div>
+            <div class="modal-footer history-modal-footer">
+                <span class="history-count">共 <span id="history-total-count">0</span> 条记录</span>
+                <button class="btn btn-secondary btn-sm" id="clear-all-history">
+                    <i class="fas fa-trash"></i> 清空全部
+                </button>
             </div>
         </div>
     </div>

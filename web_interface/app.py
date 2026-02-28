@@ -132,6 +132,39 @@ def api_models():
     })
 
 
+@app.route('/api/tasks', methods=['GET'])
+def api_tasks():
+    limit = request.args.get('limit', 20, type=int)
+    
+    tasks = []
+    for task in _task_history[-limit:][::-1]:
+        task_type = task.get('type', 'encode')
+        type_config = {
+            'encode': {'name': '嵌入消息', 'icon': 'fa-lock'},
+            'decode': {'name': '提取消息', 'icon': 'fa-unlock'},
+            'batch': {'name': '批量处理', 'icon': 'fa-layer-group'}
+        }.get(task_type, {'name': '未知操作', 'icon': 'fa-question'})
+        
+        tasks.append({
+            'id': task.get('id', str(len(tasks) + 1)),
+            'type': task_type,
+            'status': task.get('status', 'completed'),
+            'filename': task.get('filename', ''),
+            'message_length': task.get('message_length', 0),
+            'encode_time': task.get('encode_time', 0),
+            'decode_time': task.get('decode_time', 0),
+            'created_at': task.get('timestamp', task.get('created_at', '')),
+            'type_name': type_config['name'],
+            'icon': type_config['icon'],
+            'progress': task.get('progress')
+        })
+    
+    return jsonify({
+        'success': True,
+        'tasks': tasks
+    })
+
+
 @app.route('/api/upload', methods=['POST'])
 def api_upload():
     try:

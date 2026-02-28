@@ -1621,60 +1621,65 @@ function renderTaskHistory() {
         return;
     }
     
-    // 只显示最近5条记录
     const recentTasks = AppState.taskHistory.slice(0, 5);
     
     historyList.innerHTML = recentTasks.map(task => {
-        const statusConfig = getTaskStatusConfig(task.status);
         const typeConfig = getTaskTypeConfig(task.type);
-        const progressCurrent = task.progress?.current || 0;
-        const progressTotal = task.progress?.total || 0;
-        const hasProgress = progressTotal > 0;
-        
-        // 中断任务特殊显示
-        const isInterrupted = task.status === 'interrupted';
-        // 中断任务使用感叹号图标，其他任务使用类型图标
-        const displayIcon = isInterrupted ? 'fa-exclamation-circle' : typeConfig.icon;
+        const time = formatTaskTime(task.created_at);
+        const filename = task.filename || '未知文件';
+        const statusClass = task.status === 'interrupted' ? 'interrupted' : '';
         
         return `
-            <div class="task-history-item ${task.status}" data-task-id="${task.id}" onclick="openHistoryModal()" style="cursor: pointer;">
-                <div class="task-status-indicator" style="background-color: ${isInterrupted ? 'var(--error-color)' : statusConfig.color};"></div>
-                <div class="task-info">
-                    <div class="task-type-name">
-                        <i class="fas ${displayIcon}" style="color: ${isInterrupted ? 'var(--error-color)' : 'inherit'};"></i>
-                        <span>${typeConfig.name}</span>
-                    </div>
-                    <div class="task-status-text" style="color: ${isInterrupted ? 'var(--error-color)' : statusConfig.color};">
-                        ${isInterrupted ? '<strong>已中断</strong>' : statusConfig.text}
-                        ${hasProgress ? 
-                            `<span class="task-progress-text">(${progressCurrent}/${progressTotal})</span>` : 
-                            ''
-                        }
-                    </div>
-                    <div class="task-time">${formatTaskTime(task.created_at)}</div>
+            <div class="history-item ${task.type} ${statusClass}" 
+                 data-task-id="${task.id}" 
+                 data-task-type="${task.type}"
+                 onclick="handleHistoryItemClick('${task.id}', '${task.type}')"
+                 title="点击查看详情">
+                <div class="history-item-icon">
+                    <i class="fas ${typeConfig.icon}"></i>
                 </div>
-                ${isInterrupted ? `
-                    <button class="btn btn-sm btn-secondary resume-task-btn" onclick="event.stopPropagation(); resumeInterruptedTask('${task.id}')">
-                        <i class="fas fa-redo"></i>
-                        <span>重新执行</span>
-                    </button>
-                ` : ''}
+                <div class="history-item-info">
+                    <div class="history-item-title">${filename}</div>
+                    <div class="history-item-meta">
+                        <span class="history-item-badge ${task.type}">${typeConfig.name}</span>
+                        <span class="history-item-time">${time}</span>
+                    </div>
+                </div>
             </div>
         `;
     }).join('');
 }
 
-// 获取任务状态配置
-function getTaskStatusConfig(status) {
+// 处理历史记录点击
+function handleHistoryItemClick(taskId, taskType) {
+    const task = AppState.taskHistory.find(t => t.id === taskId);
+    if (!task) return;
+    
+    if (taskType === 'encode') {
+        switchTab('encode');
+        if (task.filename) {
+            showNotification(`正在加载: ${task.filename}`, 'info');
+        }
+    } else if (taskType === 'decode') {
+        switchTab('decode');
+        if (task.filename) {
+            showNotification(`正在加载: ${task.filename}`, 'info');
+        }
+    } else if (taskType === 'batch') {
+        switchTab('batch');
+    }
+    
+    openHistoryModal();
+}
+
+// 获取任务类型配置
+function getTaskTypeConfig(type) {
     const configs = {
-        'pending': { text: '等待中', color: '#94a3b8' },
-        'running': { text: '运行中', color: '#3b82f6' },
-        'paused': { text: '已暂停', color: '#f59e0b' },
-        'interrupted': { text: '已中断', color: '#ef4444' },
-        'completed': { text: '已完成', color: '#10b981' },
-        'failed': { text: '失败', color: '#ef4444' }
+        'encode': { name: '嵌入消息', icon: 'fa-lock' },
+        'decode': { name: '提取消息', icon: 'fa-unlock' },
+        'batch': { name: '批量处理', icon: 'fa-layer-group' }
     };
-    return configs[status] || configs['pending'];
+    return configs[type] || { name: '未知操作', icon: 'fa-question' };
 }
 
 // 获取任务类型配置
@@ -1799,126 +1804,28 @@ function renderFullHistory() {
     }
     
     elements.historyModalList.innerHTML = filteredTasks.map(task => {
-        // 安全获取任务数据
-        const status = task.status || 'unknown';
-        const type = task.type || 'unknown';
+        const type = task.type || 'encode';
         const taskId = task.id || 'unknown';
-        
-        const statusConfig = getTaskStatusConfig(status);
-        const typeConfig = getTaskTypeConfig(type);
+        const filename = task.filename || '未知文件';
         const createdAt = task.created_at ? formatTaskTime(task.created_at) : '未知时间';
-        const completedAt = task.completed_at ? formatTaskTime(task.completed_at) : null;
-        const interruptedAt = task.interrupted_at ? formatTaskTime(task.interrupted_at) : null;
         
-        // 安全获取进度信息
-        const progress = task.progress || {};
-        const progressCurrent = progress.current || 0;
-        const progressTotal = progress.total || 0;
-        const currentFile = progress.current_file || '';
-        
-        // 计算处理时长
-        let durationText = '';
-        if (task.started_at && (task.completed_at || task.interrupted_at)) {
-            const start = new Date(task.started_at);
-            const end = new Date(task.completed_at || task.interrupted_at);
-            const duration = Math.round((end - start) / 1000);
-            if (duration < 60) {
-                durationText = `${duration}秒`;
-            } else {
-                durationText = `${Math.floor(duration / 60)}分${duration % 60}秒`;
-            }
-        }
-        
-        // 进度信息
-        const progressText = progressTotal > 0 
-            ? `${progressCurrent}/${progressTotal}` 
-            : '';
-        const progressPercent = progressTotal > 0
-            ? Math.round((progressCurrent / progressTotal) * 100)
-            : 0;
-        
-        // 中断任务使用特殊图标
-        const isInterrupted = status === 'interrupted';
-        const typeIcon = isInterrupted ? 'fa-exclamation-circle' : typeConfig.icon;
-        const typeIconColor = isInterrupted ? 'var(--error-color)' : statusConfig.color;
+        const typeConfig = getTaskTypeConfig(type);
         
         return `
-            <div class="history-detail-item ${status}" data-task-id="${taskId}">
-                <div class="history-item-header">
-                    <div class="history-item-type">
-                        <div class="type-icon ${isInterrupted ? 'interrupted-icon' : ''}" style="background-color: ${typeIconColor}20; color: ${typeIconColor};">
-                            <i class="fas ${typeIcon}"></i>
-                        </div>
-                        <div class="type-info">
-                            <span class="type-name">${typeConfig.name}</span>
-                            <span class="task-id">#${taskId.slice(-8)}</span>
-                        </div>
-                    </div>
-                    <div class="history-item-status">
-                        ${isInterrupted ? `
-                            <span class="status-badge status-badge-interrupted">
-                                <i class="fas fa-exclamation-circle"></i>
-                                已中断
-                            </span>
-                        ` : `
-                            <span class="status-badge" style="background-color: ${statusConfig.color}20; color: ${statusConfig.color};">
-                                <i class="fas fa-circle" style="font-size: 6px;"></i>
-                                ${statusConfig.text}
-                            </span>
-                        `}
-                    </div>
+            <div class="history-item ${type}" 
+                 data-task-id="${taskId}"
+                 onclick="handleHistoryItemClick('${taskId}', '${type}')"
+                 title="点击查看详情">
+                <div class="history-item-icon">
+                    <i class="fas ${typeConfig.icon}"></i>
                 </div>
-                
-                <div class="history-item-body">
-                    ${currentFile ? `
-                        <div class="history-item-file">
-                            <i class="fas fa-file-image"></i>
-                            <span>${currentFile}</span>
-                        </div>
-                    ` : ''}
-                    
-                    ${progressTotal > 0 ? `
-                        <div class="history-item-progress">
-                            <div class="progress-bar-sm">
-                                <div class="progress-fill-sm" style="width: ${progressPercent}%; background-color: ${statusConfig.color};"></div>
-                            </div>
-                            <span class="progress-text">${progressText}</span>
-                        </div>
-                    ` : ''}
-                    
+                <div class="history-item-info">
+                    <div class="history-item-title">${filename}</div>
                     <div class="history-item-meta">
-                        <div class="meta-item">
-                            <i class="fas fa-clock"></i>
-                            <span>创建: ${createdAt}</span>
-                        </div>
-                        ${completedAt ? `
-                            <div class="meta-item">
-                                <i class="fas fa-check"></i>
-                                <span>完成: ${completedAt}</span>
-                            </div>
-                        ` : ''}
-                        ${interruptedAt ? `
-                            <div class="meta-item">
-                                <i class="fas fa-pause"></i>
-                                <span>中断: ${interruptedAt}</span>
-                            </div>
-                        ` : ''}
-                        ${durationText ? `
-                            <div class="meta-item">
-                                <i class="fas fa-hourglass-half"></i>
-                                <span>耗时: ${durationText}</span>
-                            </div>
-                        ` : ''}
+                        <span class="history-item-badge ${type}">${typeConfig.name}</span>
+                        <span class="history-item-time">${createdAt}</span>
                     </div>
                 </div>
-                
-                ${status === 'interrupted' ? `
-                    <div class="history-item-actions">
-                        <button class="btn btn-sm btn-secondary" onclick="resumeInterruptedTask('${taskId}')">
-                            <i class="fas fa-redo"></i> 重新执行
-                        </button>
-                    </div>
-                ` : ''}
             </div>
         `;
     }).join('');
@@ -2401,6 +2308,11 @@ function addToHistory(type, data) {
 }
 
 function renderHistory() {
+    if (!elements || !elements.historyList) {
+        console.warn('renderHistory: elements 或 historyList 未初始化');
+        return;
+    }
+    
     if (AppState.history.length === 0) {
         elements.historyList.innerHTML = `
             <div class="empty-state">
@@ -2412,8 +2324,8 @@ function renderHistory() {
     }
     
     elements.historyList.innerHTML = AppState.history.map(item => {
-        const icon = item.type === 'encode' ? 'fa-lock' : 'fa-unlock';
-        const typeText = item.type === 'encode' ? '嵌入消息' : '提取消息';
+        const icon = item.type === 'encode' ? 'fa-lock' : (item.type === 'decode' ? 'fa-unlock' : 'fa-layer-group');
+        const time = item.timestamp ? new Date(item.timestamp).toLocaleString() : (item.time || '');
         
         return `
             <div class="history-item">
@@ -2421,8 +2333,8 @@ function renderHistory() {
                     <i class="fas ${icon}"></i>
                 </div>
                 <div class="history-item-info">
-                    <div class="history-item-title">${item.filename}</div>
-                    <div class="history-item-time">${item.time}</div>
+                    <div class="history-item-title">${item.filename || item.message || ''}</div>
+                    <div class="history-item-time">${time}</div>
                 </div>
             </div>
         `;
