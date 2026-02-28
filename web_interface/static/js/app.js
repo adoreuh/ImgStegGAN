@@ -1071,8 +1071,27 @@ async function encodeMessage() {
         return;
     }
     
-    const message = elements.messageInput.value.trim();
-    if (!message) {
+    // 验证消息输入元素是否存在
+    if (!elements.messageInput) {
+        console.error('消息输入元素未找到！');
+        NotificationManager.error('系统错误：消息输入框未找到，请刷新页面重试');
+        return;
+    }
+    
+    // 获取输入的消息，支持多种输入方式
+    let message = '';
+    try {
+        message = elements.messageInput.value;
+        console.log('原始输入值:', message);
+        message = message.trim();
+        console.log('修剪后消息:', message, '长度:', message.length);
+    } catch (e) {
+        console.error('获取消息输入值时出错:', e);
+        NotificationManager.error('读取消息内容失败，请重新输入');
+        return;
+    }
+    
+    if (!message || message.length === 0) {
         NotificationManager.warning('请输入要嵌入的消息');
         elements.messageInput.focus();
         elements.messageInput.classList.add('error-shake');
@@ -2629,9 +2648,59 @@ function setupEventListeners() {
         NotificationManager.info('打包下载功能开发中，请使用"下载全部文件"按钮');
     });
     
-    // 消息输入
-    elements.messageInput.addEventListener('input', updateEncodeUI);
-    elements.batchMessageInput.addEventListener('input', updateBatchUI);
+    // 消息输入 - 增强事件监听，支持中文输入法和粘贴操作
+    if (elements.messageInput) {
+        // input事件 - 处理正常输入和粘贴
+        elements.messageInput.addEventListener('input', (e) => {
+            console.log('消息输入事件触发，当前值:', e.target.value);
+            updateEncodeUI();
+        });
+        
+        // compositionstart/compositionend - 处理中文输入法
+        elements.messageInput.addEventListener('compositionstart', () => {
+            console.log('中文输入法开始输入');
+        });
+        
+        elements.messageInput.addEventListener('compositionend', (e) => {
+            console.log('中文输入法输入完成，最终值:', e.target.value);
+            updateEncodeUI();
+        });
+        
+        // paste事件 - 处理粘贴操作
+        elements.messageInput.addEventListener('paste', (e) => {
+            console.log('粘贴事件触发');
+            // 延迟更新UI，等待粘贴内容写入
+            setTimeout(() => {
+                console.log('粘贴后值:', elements.messageInput.value);
+                updateEncodeUI();
+            }, 0);
+        });
+        
+        // keyup事件 - 作为备用
+        elements.messageInput.addEventListener('keyup', () => {
+            updateEncodeUI();
+        });
+        
+        // 确保输入框可以正常聚焦
+        elements.messageInput.addEventListener('focus', () => {
+            console.log('消息输入框获得焦点');
+        });
+        
+        elements.messageInput.addEventListener('blur', () => {
+            console.log('消息输入框失去焦点，当前值:', elements.messageInput.value);
+        });
+    } else {
+        console.error('消息输入元素未找到，无法绑定事件！');
+    }
+    
+    if (elements.batchMessageInput) {
+        elements.batchMessageInput.addEventListener('input', updateBatchUI);
+        // 同样为批量输入添加中文输入法支持
+        elements.batchMessageInput.addEventListener('compositionend', updateBatchUI);
+        elements.batchMessageInput.addEventListener('paste', () => {
+            setTimeout(updateBatchUI, 0);
+        });
+    }
     
     // 历史记录
     elements.clearHistory.addEventListener('click', () => {
@@ -2781,6 +2850,33 @@ function clearBatch() {
 // 初始化
 // ============================================================================
 function init() {
+    console.log('开始初始化应用...');
+    
+    // 验证关键DOM元素
+    const criticalElements = [
+        { id: 'message-input', name: '消息输入框' },
+        { id: 'btn-encode', name: '嵌入按钮' },
+        { id: 'drop-zone-encode', name: '嵌入拖放区' },
+        { id: 'file-input-encode', name: '文件输入' }
+    ];
+    
+    let missingElements = [];
+    criticalElements.forEach(el => {
+        const element = document.getElementById(el.id);
+        if (!element) {
+            missingElements.push(el.name);
+            console.error(`关键元素缺失: ${el.name} (id: ${el.id})`);
+        } else {
+            console.log(`✓ 元素已找到: ${el.name} (id: ${el.id})`);
+        }
+    });
+    
+    if (missingElements.length > 0) {
+        console.error('初始化失败：以下关键元素未找到:', missingElements.join(', '));
+        alert('页面初始化失败，请刷新页面重试。缺少元素: ' + missingElements.join(', '));
+        return;
+    }
+    
     loadTheme();
     setupEventListeners();
     renderHistory();
@@ -2803,7 +2899,7 @@ function init() {
     // 设置页面关闭/刷新时的中断处理
     setupPageUnloadHandler();
     
-    console.log(`ImgStegGAN Web Interface V${VERSION} initialized`);
+    console.log(`ImgStegGAN Web Interface V${VERSION} 初始化完成`);
 }
 
 // ============================================================================
